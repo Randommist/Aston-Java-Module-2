@@ -7,8 +7,13 @@ import org.example.userservice.exception.UserServiceException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 public class UserService {
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+    );
 
     private final UserDao userDao;
 
@@ -76,7 +81,7 @@ public class UserService {
             throw new IllegalArgumentException("Name must not be blank");
         }
 
-        if (email == null || email.isBlank() || !email.contains("@")) {
+        if (email == null || email.isBlank() || !EMAIL_PATTERN.matcher(email.trim()).matches()) {
             throw new IllegalArgumentException("Email must be valid");
         }
 

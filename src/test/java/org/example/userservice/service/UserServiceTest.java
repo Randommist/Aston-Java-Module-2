@@ -53,6 +53,25 @@ class UserServiceTest {
         assertEquals("USER_NOT_FOUND", exception.getErrorCode());
     }
 
+    @Test
+    void shouldRejectInvalidEmail() {
+        UserService userService = new UserService(new InMemoryUserDao());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser("Test User", "invalid@", 25)
+        );
+    }
+
+    @Test
+    void shouldAcceptValidEmail() {
+        UserService userService = new UserService(new InMemoryUserDao());
+
+        User user = userService.createUser("Test User", "test.user+tag@example.com", 25);
+
+        assertEquals("test.user+tag@example.com", user.getEmail());
+    }
+
     private static class InMemoryUserDao implements UserDao {
         private final List<User> users = new ArrayList<>();
         private long nextId = 1;
