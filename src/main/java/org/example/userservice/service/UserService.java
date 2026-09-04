@@ -2,6 +2,7 @@ package org.example.userservice.service;
 
 import org.example.userservice.dao.UserDao;
 import org.example.userservice.entity.User;
+import org.example.userservice.exception.UserServiceException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,7 +42,10 @@ public class UserService {
         validateUserData(name, email, age);
 
         User user = userDao.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User with id " + id + " not found"));
+                .orElseThrow(() -> new UserServiceException(
+                        "USER_NOT_FOUND",
+                        "User with id " + id + " not found"
+                ));
 
         user.setName(name.trim());
         user.setEmail(email.trim());

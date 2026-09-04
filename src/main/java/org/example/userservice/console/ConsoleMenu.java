@@ -1,13 +1,18 @@
 package org.example.userservice.console;
 
 import org.example.userservice.entity.User;
+import org.example.userservice.exception.UserServiceException;
 import org.example.userservice.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
 
 public class ConsoleMenu {
+
+    private static final Logger log = LoggerFactory.getLogger(ConsoleMenu.class);
 
     private final UserService userService;
     private final Scanner scanner;
@@ -43,7 +48,13 @@ public class ConsoleMenu {
                 }
             } catch (IllegalArgumentException e) {
                 System.out.println("Invalid input: " + e.getMessage());
-            } catch (RuntimeException e) {
+            } catch (UserServiceException e) {
+                log.error(
+                        "User service error. code={}, message={}",
+                        e.getErrorCode(),
+                        e.getMessage(),
+                        e
+                );
                 System.out.println("Operation failed: " + e.getMessage());
             }
 

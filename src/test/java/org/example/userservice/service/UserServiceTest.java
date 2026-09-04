@@ -2,6 +2,7 @@ package org.example.userservice.service;
 
 import org.example.userservice.dao.UserDao;
 import org.example.userservice.entity.User;
+import org.example.userservice.exception.UserServiceException;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,6 +12,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UserServiceTest {
@@ -37,6 +39,18 @@ class UserServiceTest {
 
         assertTrue(userService.deleteUser(user.getId()));
         assertFalse(userService.getUserById(user.getId()).isPresent());
+    }
+
+    @Test
+    void shouldThrowServiceExceptionWhenUpdatingMissingUser() {
+        UserService userService = new UserService(new InMemoryUserDao());
+
+        UserServiceException exception = assertThrows(
+                UserServiceException.class,
+                () -> userService.updateUser(1L, "Test User", "test@example.com", 25)
+        );
+
+        assertEquals("USER_NOT_FOUND", exception.getErrorCode());
     }
 
     private static class InMemoryUserDao implements UserDao {
