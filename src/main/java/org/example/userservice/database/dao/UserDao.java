@@ -1,11 +1,12 @@
-package org.example.userservice.dao;
+package org.example.userservice.database.dao;
 
-import org.example.userservice.entity.User;
+import org.example.userservice.database.entity.User;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface UserDao {
+
     User create(User user);
 
     Optional<User> findById(Long id);
