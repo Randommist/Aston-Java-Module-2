@@ -11,6 +11,6 @@
         <property name="hibernate.show_sql">false</property>
         <property name="hibernate.format_sql">true</property>
 
-        <mapping class="org.example.userservice.entity.User"/>
+        <mapping class="org.example.userservice.database.entity.User"/>
     </session-factory>
 </hibernate-configuration>
