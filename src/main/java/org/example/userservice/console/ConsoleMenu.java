@@ -1,10 +1,9 @@
 package org.example.userservice.console;
 
-import org.example.userservice.entity.User;
-import org.example.userservice.exception.UserServiceException;
+import org.example.userservice.database.entity.User;
+import org.example.userservice.dto.CreateUserRq;
+import org.example.userservice.dto.UpdateUserRq;
 import org.example.userservice.service.UserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.Scanner;
 
 public class ConsoleMenu {
 
-    private static final Logger log = LoggerFactory.getLogger(ConsoleMenu.class);
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final UserService userService;
     private final Scanner scanner;
@@ -48,13 +47,7 @@ public class ConsoleMenu {
                 }
             } catch (IllegalArgumentException e) {
                 System.out.println("Invalid input: " + e.getMessage());
-            } catch (UserServiceException e) {
-                log.error(
-                        "User service error. code={}, message={}",
-                        e.getErrorCode(),
-                        e.getMessage(),
-                        e
-                );
+            } catch (RuntimeException e) {
                 System.out.println("Operation failed: " + e.getMessage());
             }
 
@@ -81,7 +74,8 @@ public class ConsoleMenu {
 
         int age = readInt("Age: ");
 
-        User user = userService.createUser(name, email, age);
+        CreateUserRq request = new CreateUserRq(name, email, age);
+        User user = userService.createUser(request);
         System.out.println("User created with id: " + user.getId());
     }
 
@@ -115,7 +109,8 @@ public class ConsoleMenu {
 
         int age = readInt("New age: ");
 
-        User user = userService.updateUser(id, name, email, age);
+        UpdateUserRq request = new UpdateUserRq(id, name, email, age);
+        User user = userService.updateUser(request);
         System.out.println("User updated:");
         printUser(user);
     }
@@ -133,7 +128,6 @@ public class ConsoleMenu {
     private int readInt(String prompt) {
         System.out.print(prompt);
         String value = scanner.nextLine().trim();
-
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
@@ -155,7 +149,7 @@ public class ConsoleMenu {
     private void printUser(User user) {
         String createdAt = user.getCreatedAt() == null
                 ? "-"
-                : user.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                : user.getCreatedAt().format(DATE_TIME_FORMATTER);
 
         System.out.printf(
                 "id=%s, name=%s, email=%s, age=%s, createdAt=%s%n",
