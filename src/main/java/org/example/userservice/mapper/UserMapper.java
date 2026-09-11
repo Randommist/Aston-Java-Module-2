@@ -4,8 +4,6 @@ import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
 
-import java.time.LocalDateTime;
-
 public class UserMapper {
     /**
      * Создаёт новую сущность User из данных запроса
@@ -16,7 +14,6 @@ public class UserMapper {
         user.setName(request.name().trim());
         user.setEmail(request.email().trim());
         user.setAge(request.age());
-        user.setCreatedAt(LocalDateTime.now());
         return user;
     }
 

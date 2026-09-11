@@ -55,10 +55,6 @@ public class UserService {
     public boolean deleteUser(Long id) {
         validateId(id);
 
-        if (userDao.findById(id).isEmpty()) {
-            return false;
-        }
-
         userDao.deleteById(id);
         return true;
     }
