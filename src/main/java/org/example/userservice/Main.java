@@ -7,7 +7,6 @@ import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.service.UserService;
 import org.example.userservice.util.HibernateUtil;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 public class Main {
     public static void main(String[] args) {
