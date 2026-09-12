@@ -32,22 +32,12 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public Optional<User> findById(Long id) {
-        try (Session session = sessionFactory.openSession()) {
-            return Optional.ofNullable(session.find(User.class, id));
-        } catch (HibernateException e) {
-            log.error("Failed to find user by id={}", id, e);
-            throw new UserServiceException(DB_ERROR, DB_ERROR.getMessage());
-        }
+        return executeInTransaction(session -> Optional.ofNullable(session.find(User.class, id)));
     }
 
     @Override
     public List<User> findAll() {
-        try (Session session = sessionFactory.openSession()) {
-            return session.createQuery("from User", User.class).list();
-        } catch (HibernateException e) {
-            log.error("Failed to fetch users", e);
-            throw new UserServiceException(DB_ERROR, DB_ERROR.getMessage());
-        }
+        return executeInTransaction(session -> session.createQuery("from User", User.class).list());
     }
 
     @Override
@@ -79,7 +69,7 @@ public class UserDaoImpl implements UserDao {
             transaction.commit();
             return result;
         } catch (RuntimeException e) {
-            if (transaction != null|| transaction.isActive()) {
+            if (transaction != null && transaction.isActive()) {
                 transaction.rollback();
             }
             log.error("Transaction failed", e);
