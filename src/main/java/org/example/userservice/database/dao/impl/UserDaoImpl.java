@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.userservice.database.dao.UserDao;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.exception.UserServiceException;
-import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -62,16 +61,23 @@ public class UserDaoImpl implements UserDao {
      * а исключение Hibernate оборачивается в {@link UserServiceException}.
      */
     private <T> T executeInTransaction(Function<Session, T> action) {
-        Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            T result = action.apply(session);
-            transaction.commit();
-            return result;
-        } catch (RuntimeException e) {
-            if (transaction != null && transaction.isActive()) {
-                transaction.rollback();
+            Transaction transaction = session.beginTransaction();
+            try {
+                T result = action.apply(session);
+                transaction.commit();
+                return result;
+            } catch (RuntimeException e) {
+                try {
+                    if (transaction.isActive()) {
+                        transaction.rollback();
+                    }
+                } catch (RuntimeException rollbackException) {
+                    e.addSuppressed(rollbackException);
+                }
+                throw e;
             }
+        } catch (RuntimeException e) {
             log.error("Transaction failed", e);
             throw new UserServiceException(DB_ERROR, DB_ERROR.getMessage());
         }
