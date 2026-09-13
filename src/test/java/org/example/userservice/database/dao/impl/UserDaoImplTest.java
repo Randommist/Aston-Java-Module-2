@@ -8,9 +8,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import static org.example.userservice.fixture.UserTestFactory.createUser;
+import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_AGE;
+import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_EMAIL;
+import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_NAME;
+import static org.example.userservice.fixture.UserTestFactory.NON_EXISTENT_ID;
+import static org.example.userservice.fixture.UserTestFactory.OTHER_USER_AGE;
+import static org.example.userservice.fixture.UserTestFactory.OTHER_USER_EMAIL;
+import static org.example.userservice.fixture.UserTestFactory.OTHER_USER_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,17 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Testcontainers
 class UserDaoImplTest extends TestContainersConfig {
 
-
-    private static final String DEFAULT_USER_NAME = "John Doe";
-    private static final String DEFAULT_USER_EMAIL = "john@example.com";
-    private static final int DEFAULT_USER_AGE = 30;
-
-    private static final String OTHER_USER_NAME = "Jane";
-    private static final String OTHER_USER_EMAIL = "jane@example.com";
-    private static final int OTHER_USER_AGE = 25;
-
-    private static final long NON_EXISTENT_ID = -1L;
-
     private UserDaoImpl userDao;
 
     @BeforeEach
@@ -37,20 +34,11 @@ class UserDaoImplTest extends TestContainersConfig {
         userDao = new UserDaoImpl(sessionFactory);
     }
 
-    private User buildUser(String name, String email, int age) {
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setAge(age);
-        user.setCreatedAt(LocalDateTime.now());
-        return user;
-    }
-
     @Test
     @DisplayName("create: после сохранения у пользователя должен быть сгенерирован id")
     void create_validUser_shouldGenerateId() {
         // given
-        User newUser = buildUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
+        User newUser = createUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
 
         // when
         User savedUser = userDao.create(newUser);
@@ -63,7 +51,7 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("create: имя сохранённого пользователя должно совпадать с переданным")
     void create_validUser_shouldPersistName() {
         // given
-        User newUser = buildUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
+        User newUser = createUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
 
         // when
         User savedUser = userDao.create(newUser);
@@ -77,8 +65,8 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("create: повторное сохранение с уже существующим email должно бросить UserServiceException")
     void create_duplicateEmail_shouldThrowUserServiceException() {
         // given
-        userDao.create(buildUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
-        User duplicateEmailUser = buildUser(OTHER_USER_NAME, DEFAULT_USER_EMAIL, OTHER_USER_AGE);
+        userDao.create(createUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
+        User duplicateEmailUser = createUser(OTHER_USER_NAME, DEFAULT_USER_EMAIL, OTHER_USER_AGE);
 
         // when / then
         assertThrows(UserServiceException.class, () -> userDao.create(duplicateEmailUser));
@@ -88,8 +76,8 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("create: после ошибки дублирующегося email в базе не должно появиться лишней записи")
     void create_duplicateEmail_shouldNotLeaveOrphanRecord() {
         // given
-        userDao.create(buildUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
-        User duplicateEmailUser = buildUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
+        userDao.create(createUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
+        User duplicateEmailUser = createUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
 
         // when
         assertThrows(UserServiceException.class, () -> userDao.create(duplicateEmailUser));
@@ -102,7 +90,7 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("findById: для существующего id должен вернуться Optional с пользователем")
     void findById_existingId_shouldReturnPresentOptional() {
         // given
-        User created = userDao.create(buildUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
+        User created = userDao.create(createUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
 
         // when
         Optional<User> found = userDao.findById(created.getId());
@@ -115,7 +103,7 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("findById: найденный пользователь должен содержать корректное имя")
     void findById_existingId_shouldReturnUserWithCorrectName() {
         // given
-        User created = userDao.create(buildUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
+        User created = userDao.create(createUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
 
         // when
         Optional<User> found = userDao.findById(created.getId());
@@ -138,8 +126,8 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("findAll: должен вернуть всех сохранённых пользователей")
     void findAll_multipleUsersPersisted_shouldReturnAllOfThem() {
         // given
-        userDao.create(buildUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
-        userDao.create(buildUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
+        userDao.create(createUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
+        userDao.create(createUser(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
 
         // when
         List<User> allUsers = userDao.findAll();
@@ -162,7 +150,7 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("update: изменённое имя должно сохраниться в базе")
     void update_existingUser_shouldPersistNewName() {
         // given
-        User created = userDao.create(buildUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
+        User created = userDao.create(createUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
         created.setName(OTHER_USER_NAME);
 
         // when
@@ -177,7 +165,7 @@ class UserDaoImplTest extends TestContainersConfig {
     @DisplayName("deleteById: после удаления пользователь не должен находиться по id")
     void deleteById_existingId_shouldRemoveUser() {
         // given
-        User created = userDao.create(buildUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
+        User created = userDao.create(createUser(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE));
 
         // when
         userDao.deleteById(created.getId());

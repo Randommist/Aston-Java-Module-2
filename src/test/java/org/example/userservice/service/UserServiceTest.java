@@ -23,6 +23,16 @@ import java.util.stream.Stream;
 import static org.example.userservice.constant.ErrorCode.DB_ERROR;
 import static org.example.userservice.constant.ErrorCode.USER_NOT_FOUND;
 import static org.example.userservice.constant.ErrorCode.VALIDATION_ERROR;
+
+import static org.example.userservice.fixture.UserTestFactory.createUser;
+import static org.example.userservice.fixture.UserTestFactory.DB_ERROR_MESSAGE;
+import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_AGE;
+import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_EMAIL;
+import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_NAME;
+import static org.example.userservice.fixture.UserTestFactory.INVALID_AGE;
+import static org.example.userservice.fixture.UserTestFactory.INVALID_EMAIL;
+import static org.example.userservice.fixture.UserTestFactory.MIN_VALID_AGE;
+import static org.example.userservice.fixture.UserTestFactory.VALID_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,15 +47,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    private static final String VALID_NAME = "Andrey";
-    private static final String VALID_EMAIL = "andrey@example.com";
-    private static final String INVALID_EMAIL = "invalid-email";
-    private static final int VALID_AGE = 30;
-    private static final int MIN_VALID_AGE = 0;
-    private static final int INVALID_AGE = -1;
-    private static final long VALID_ID = 1L;
-    private static final String DB_ERROR_MESSAGE = "Database unavailable";
-
     @Mock
     private UserDao userDao;
     @Mock
@@ -59,11 +60,11 @@ class UserServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {MIN_VALID_AGE, VALID_AGE})
+    @ValueSource(ints = {MIN_VALID_AGE, DEFAULT_USER_AGE})
     void createUser_validRequest_returnsDaoResult(int age) {
-        CreateUserRq request = new CreateUserRq(VALID_NAME, VALID_EMAIL, age);
-        User mapped = new User();
-        User saved = new User();
+        CreateUserRq request = new CreateUserRq(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, age);
+        User mapped = createUser();
+        User saved = createUser();
         when(userMapper.toEntity(request)).thenReturn(mapped);
         when(userDao.create(mapped)).thenReturn(saved);
 
@@ -85,20 +86,20 @@ class UserServiceTest {
 
     static Stream<CreateUserRq> invalidCreateRequests() {
         return Stream.of(
-                new CreateUserRq(null, VALID_EMAIL, VALID_AGE),
-                new CreateUserRq("", VALID_EMAIL, VALID_AGE),
-                new CreateUserRq("   ", VALID_EMAIL, VALID_AGE),
-                new CreateUserRq(VALID_NAME, null, VALID_AGE),
-                new CreateUserRq(VALID_NAME, "", VALID_AGE),
-                new CreateUserRq(VALID_NAME, "   ", VALID_AGE),
-                new CreateUserRq(VALID_NAME, INVALID_EMAIL, VALID_AGE),
-                new CreateUserRq(VALID_NAME, VALID_EMAIL, INVALID_AGE));
+                new CreateUserRq(null, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new CreateUserRq("", DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new CreateUserRq("   ", DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new CreateUserRq(DEFAULT_USER_NAME, null, DEFAULT_USER_AGE),
+                new CreateUserRq(DEFAULT_USER_NAME, "", DEFAULT_USER_AGE),
+                new CreateUserRq(DEFAULT_USER_NAME, "   ", DEFAULT_USER_AGE),
+                new CreateUserRq(DEFAULT_USER_NAME, INVALID_EMAIL, DEFAULT_USER_AGE),
+                new CreateUserRq(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, INVALID_AGE));
     }
 
     @Test
     void createUser_daoFailure_propagatesException() {
-        CreateUserRq request = new CreateUserRq(VALID_NAME, VALID_EMAIL, VALID_AGE);
-        User mapped = new User();
+        CreateUserRq request = new CreateUserRq(DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
+        User mapped = createUser();
         UserServiceException failure = databaseFailure();
         when(userMapper.toEntity(request)).thenReturn(mapped);
         when(userDao.create(mapped)).thenThrow(failure);
@@ -109,7 +110,7 @@ class UserServiceTest {
 
     @Test
     void getUserById_existingUser_returnsUser() {
-        User user = new User();
+        User user = createUser();
         when(userDao.findById(VALID_ID)).thenReturn(Optional.of(user));
 
         assertSame(user, userService.getUserById(VALID_ID).orElseThrow());
@@ -146,7 +147,7 @@ class UserServiceTest {
 
     @Test
     void getAllUsers_returnsDaoUsers() {
-        List<User> users = List.of(new User(), new User());
+        List<User> users = List.of(createUser(), createUser());
         when(userDao.findAll()).thenReturn(users);
 
         assertEquals(users, userService.getAllUsers());
@@ -171,11 +172,11 @@ class UserServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {MIN_VALID_AGE, VALID_AGE})
+    @ValueSource(ints = {MIN_VALID_AGE, DEFAULT_USER_AGE})
     void updateUser_existingUser_mapsBeforeSavingAndReturnsDaoResult(int age) {
-        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, age);
-        User existing = new User();
-        User saved = new User();
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, age);
+        User existing = createUser();
+        User saved = createUser();
         when(userDao.findById(VALID_ID)).thenReturn(Optional.of(existing));
         when(userDao.update(existing)).thenReturn(saved);
 
@@ -189,7 +190,7 @@ class UserServiceTest {
 
     @Test
     void updateUser_missingUser_rejectsWithoutMappingOrSaving() {
-        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, VALID_AGE);
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
         when(userDao.findById(VALID_ID)).thenReturn(Optional.empty());
 
         UserServiceException error = assertThrows(UserServiceException.class,
@@ -212,22 +213,22 @@ class UserServiceTest {
 
     static Stream<UpdateUserRq> invalidUpdateRequests() {
         return Stream.of(
-                new UpdateUserRq(null, VALID_NAME, VALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(0L, VALID_NAME, VALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(-1L, VALID_NAME, VALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(VALID_ID, null, VALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(VALID_ID, "", VALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(VALID_ID, "   ", VALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(VALID_ID, VALID_NAME, null, VALID_AGE),
-                new UpdateUserRq(VALID_ID, VALID_NAME, "", VALID_AGE),
-                new UpdateUserRq(VALID_ID, VALID_NAME, "   ", VALID_AGE),
-                new UpdateUserRq(VALID_ID, VALID_NAME, INVALID_EMAIL, VALID_AGE),
-                new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, INVALID_AGE));
+                new UpdateUserRq(null, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(0L, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(-1L, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, null, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, "", DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, "   ", DEFAULT_USER_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, null, DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, "", DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, "   ", DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, INVALID_EMAIL, DEFAULT_USER_AGE),
+                new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, INVALID_AGE));
     }
 
     @Test
     void updateUser_lookupFailure_propagatesWithoutMappingOrSaving() {
-        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, VALID_AGE);
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
         UserServiceException failure = databaseFailure();
         when(userDao.findById(VALID_ID)).thenThrow(failure);
 
@@ -240,8 +241,8 @@ class UserServiceTest {
 
     @Test
     void updateUser_saveFailure_propagatesException() {
-        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, VALID_AGE);
-        User existing = new User();
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
+        User existing = createUser();
         UserServiceException failure = databaseFailure();
         when(userDao.findById(VALID_ID)).thenReturn(Optional.of(existing));
         when(userDao.update(existing)).thenThrow(failure);
