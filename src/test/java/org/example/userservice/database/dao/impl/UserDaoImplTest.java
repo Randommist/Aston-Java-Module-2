@@ -11,11 +11,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers
 class UserDaoImplTest extends TestContainersConfig {
+
 
     private static final String DEFAULT_USER_NAME = "John Doe";
     private static final String DEFAULT_USER_EMAIL = "john@example.com";
