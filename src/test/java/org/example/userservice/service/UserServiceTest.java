@@ -20,12 +20,31 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static org.example.userservice.constant.ErrorCode.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.example.userservice.constant.ErrorCode.DB_ERROR;
+import static org.example.userservice.constant.ErrorCode.USER_NOT_FOUND;
+import static org.example.userservice.constant.ErrorCode.VALIDATION_ERROR;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
+
+    private static final String VALID_NAME = "Andrey";
+    private static final String VALID_EMAIL = "andrey@example.com";
+    private static final String INVALID_EMAIL = "invalid-email";
+    private static final int VALID_AGE = 30;
+    private static final int MIN_VALID_AGE = 0;
+    private static final int INVALID_AGE = -1;
+    private static final long VALID_ID = 1L;
+    private static final String DB_ERROR_MESSAGE = "Database unavailable";
 
     @Mock
     private UserDao userDao;
@@ -40,9 +59,9 @@ class UserServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 30})
+    @ValueSource(ints = {MIN_VALID_AGE, VALID_AGE})
     void createUser_validRequest_returnsDaoResult(int age) {
-        CreateUserRq request = new CreateUserRq("Andrey", "andrey@example.com", age);
+        CreateUserRq request = new CreateUserRq(VALID_NAME, VALID_EMAIL, age);
         User mapped = new User();
         User saved = new User();
         when(userMapper.toEntity(request)).thenReturn(mapped);
@@ -66,19 +85,19 @@ class UserServiceTest {
 
     static Stream<CreateUserRq> invalidCreateRequests() {
         return Stream.of(
-                new CreateUserRq(null, "andrey@example.com", 30),
-                new CreateUserRq("", "andrey@example.com", 30),
-                new CreateUserRq("   ", "andrey@example.com", 30),
-                new CreateUserRq("Andrey", null, 30),
-                new CreateUserRq("Andrey", "", 30),
-                new CreateUserRq("Andrey", "   ", 30),
-                new CreateUserRq("Andrey", "invalid-email", 30),
-                new CreateUserRq("Andrey", "andrey@example.com", -1));
+                new CreateUserRq(null, VALID_EMAIL, VALID_AGE),
+                new CreateUserRq("", VALID_EMAIL, VALID_AGE),
+                new CreateUserRq("   ", VALID_EMAIL, VALID_AGE),
+                new CreateUserRq(VALID_NAME, null, VALID_AGE),
+                new CreateUserRq(VALID_NAME, "", VALID_AGE),
+                new CreateUserRq(VALID_NAME, "   ", VALID_AGE),
+                new CreateUserRq(VALID_NAME, INVALID_EMAIL, VALID_AGE),
+                new CreateUserRq(VALID_NAME, VALID_EMAIL, INVALID_AGE));
     }
 
     @Test
     void createUser_daoFailure_propagatesException() {
-        CreateUserRq request = new CreateUserRq("Andrey", "andrey@example.com", 30);
+        CreateUserRq request = new CreateUserRq(VALID_NAME, VALID_EMAIL, VALID_AGE);
         User mapped = new User();
         UserServiceException failure = databaseFailure();
         when(userMapper.toEntity(request)).thenReturn(mapped);
@@ -91,20 +110,20 @@ class UserServiceTest {
     @Test
     void getUserById_existingUser_returnsUser() {
         User user = new User();
-        when(userDao.findById(1L)).thenReturn(Optional.of(user));
+        when(userDao.findById(VALID_ID)).thenReturn(Optional.of(user));
 
-        assertSame(user, userService.getUserById(1L).orElseThrow());
+        assertSame(user, userService.getUserById(VALID_ID).orElseThrow());
 
-        verify(userDao).findById(1L);
+        verify(userDao).findById(VALID_ID);
         verifyNoInteractions(userMapper);
     }
 
     @Test
     void getUserById_missingUser_returnsEmpty() {
-        when(userDao.findById(1L)).thenReturn(Optional.empty());
+        when(userDao.findById(VALID_ID)).thenReturn(Optional.empty());
 
-        assertTrue(userService.getUserById(1L).isEmpty());
-        verify(userDao).findById(1L);
+        assertTrue(userService.getUserById(VALID_ID).isEmpty());
+        verify(userDao).findById(VALID_ID);
     }
 
     @ParameterizedTest
@@ -119,10 +138,10 @@ class UserServiceTest {
     @Test
     void getUserById_daoFailure_propagatesException() {
         UserServiceException failure = databaseFailure();
-        when(userDao.findById(1L)).thenThrow(failure);
+        when(userDao.findById(VALID_ID)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
-                () -> userService.getUserById(1L)));
+                () -> userService.getUserById(VALID_ID)));
     }
 
     @Test
@@ -152,32 +171,32 @@ class UserServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 30})
+    @ValueSource(ints = {MIN_VALID_AGE, VALID_AGE})
     void updateUser_existingUser_mapsBeforeSavingAndReturnsDaoResult(int age) {
-        UpdateUserRq request = new UpdateUserRq(1L, "Andrey", "andrey@example.com", age);
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, age);
         User existing = new User();
         User saved = new User();
-        when(userDao.findById(1L)).thenReturn(Optional.of(existing));
+        when(userDao.findById(VALID_ID)).thenReturn(Optional.of(existing));
         when(userDao.update(existing)).thenReturn(saved);
 
         assertSame(saved, userService.updateUser(request));
 
         var order = inOrder(userDao, userMapper);
-        order.verify(userDao).findById(1L);
+        order.verify(userDao).findById(VALID_ID);
         order.verify(userMapper).updateEntity(existing, request);
         order.verify(userDao).update(existing);
     }
 
     @Test
     void updateUser_missingUser_rejectsWithoutMappingOrSaving() {
-        UpdateUserRq request = new UpdateUserRq(1L, "Andrey", "andrey@example.com", 30);
-        when(userDao.findById(1L)).thenReturn(Optional.empty());
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, VALID_AGE);
+        when(userDao.findById(VALID_ID)).thenReturn(Optional.empty());
 
         UserServiceException error = assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request));
 
         assertEquals(USER_NOT_FOUND, error.getErrorCode());
-        verify(userDao).findById(1L);
+        verify(userDao).findById(VALID_ID);
         verifyNoMoreInteractions(userDao);
         verifyNoInteractions(userMapper);
     }
@@ -187,45 +206,44 @@ class UserServiceTest {
     void updateUser_invalidRequest_rejectsBeforeLookupOrMapping(UpdateUserRq request) {
         UserServiceException error = assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request));
-
         assertEquals(VALIDATION_ERROR, error.getErrorCode());
         verifyNoInteractions(userDao, userMapper);
     }
 
     static Stream<UpdateUserRq> invalidUpdateRequests() {
         return Stream.of(
-                new UpdateUserRq(null, "Andrey", "andrey@example.com", 30),
-                new UpdateUserRq(0L, "Andrey", "andrey@example.com", 30),
-                new UpdateUserRq(-1L, "Andrey", "andrey@example.com", 30),
-                new UpdateUserRq(1L, null, "andrey@example.com", 30),
-                new UpdateUserRq(1L, "", "andrey@example.com", 30),
-                new UpdateUserRq(1L, "   ", "andrey@example.com", 30),
-                new UpdateUserRq(1L, "Andrey", null, 30),
-                new UpdateUserRq(1L, "Andrey", "", 30),
-                new UpdateUserRq(1L, "Andrey", "   ", 30),
-                new UpdateUserRq(1L, "Andrey", "invalid-email", 30),
-                new UpdateUserRq(1L, "Andrey", "andrey@example.com", -1));
+                new UpdateUserRq(null, VALID_NAME, VALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(0L, VALID_NAME, VALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(-1L, VALID_NAME, VALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(VALID_ID, null, VALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(VALID_ID, "", VALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(VALID_ID, "   ", VALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(VALID_ID, VALID_NAME, null, VALID_AGE),
+                new UpdateUserRq(VALID_ID, VALID_NAME, "", VALID_AGE),
+                new UpdateUserRq(VALID_ID, VALID_NAME, "   ", VALID_AGE),
+                new UpdateUserRq(VALID_ID, VALID_NAME, INVALID_EMAIL, VALID_AGE),
+                new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, INVALID_AGE));
     }
 
     @Test
     void updateUser_lookupFailure_propagatesWithoutMappingOrSaving() {
-        UpdateUserRq request = new UpdateUserRq(1L, "Andrey", "andrey@example.com", 30);
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, VALID_AGE);
         UserServiceException failure = databaseFailure();
-        when(userDao.findById(1L)).thenThrow(failure);
+        when(userDao.findById(VALID_ID)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request)));
-        verify(userDao).findById(1L);
+        verify(userDao).findById(VALID_ID);
         verifyNoMoreInteractions(userDao);
         verifyNoInteractions(userMapper);
     }
 
     @Test
     void updateUser_saveFailure_propagatesException() {
-        UpdateUserRq request = new UpdateUserRq(1L, "Andrey", "andrey@example.com", 30);
+        UpdateUserRq request = new UpdateUserRq(VALID_ID, VALID_NAME, VALID_EMAIL, VALID_AGE);
         User existing = new User();
         UserServiceException failure = databaseFailure();
-        when(userDao.findById(1L)).thenReturn(Optional.of(existing));
+        when(userDao.findById(VALID_ID)).thenReturn(Optional.of(existing));
         when(userDao.update(existing)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
@@ -235,9 +253,9 @@ class UserServiceTest {
 
     @Test
     void deleteUser_successfulDaoCall_returnsTrueWithoutExistenceCheck() {
-        assertTrue(userService.deleteUser(1L));
+        assertTrue(userService.deleteUser(VALID_ID));
 
-        verify(userDao).deleteById(1L);
+        verify(userDao).deleteById(VALID_ID);
         verifyNoMoreInteractions(userDao);
         verifyNoInteractions(userMapper);
     }
@@ -254,13 +272,13 @@ class UserServiceTest {
     @Test
     void deleteUser_daoFailure_propagatesException() {
         UserServiceException failure = databaseFailure();
-        doThrow(failure).when(userDao).deleteById(1L);
+        doThrow(failure).when(userDao).deleteById(VALID_ID);
 
         assertSame(failure, assertThrows(UserServiceException.class,
-                () -> userService.deleteUser(1L)));
+                () -> userService.deleteUser(VALID_ID)));
     }
 
     private static UserServiceException databaseFailure() {
-        return new UserServiceException(DB_ERROR, "Database unavailable");
+        return new UserServiceException(DB_ERROR, DB_ERROR_MESSAGE);
     }
 }
