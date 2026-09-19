@@ -4,12 +4,13 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import lombok.AllArgsConstructor;
-import org.example.userservice.database.dao.UserDao;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
 import org.example.userservice.exception.UserServiceException;
 import org.example.userservice.mapper.UserMapper;
+import org.example.userservice.repository.UserRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,44 +19,45 @@ import java.util.Set;
 import static org.example.userservice.constant.ErrorCode.USER_NOT_FOUND;
 import static org.example.userservice.constant.ErrorCode.VALIDATION_ERROR;
 
+@Service
 @AllArgsConstructor
 public class UserService {
 
     private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
-    private final UserDao userDao;
+    private final UserRepository userRepository;
     private final UserMapper userMapper;
 
     public User createUser(CreateUserRq request) {
         validate(request);
         User user = userMapper.toEntity(request);
-        return userDao.create(user);
+        return userRepository.save(user);
     }
 
     public Optional<User> getUserById(Long id) {
         validateId(id);
-        return userDao.findById(id);
+        return userRepository.findById(id);
     }
 
     public List<User> getAllUsers() {
-        return userDao.findAll();
+        return userRepository.findAll();
     }
 
     public User updateUser(UpdateUserRq request) {
         validate(request);
 
-        User user = userDao.findById(request.id())
+        User user = userRepository.findById(request.id())
                 .orElseThrow(() -> new UserServiceException(USER_NOT_FOUND, USER_NOT_FOUND.getMessage()));
 
         userMapper.updateEntity(user, request);
 
-        return userDao.update(user);
+        return userRepository.save(user);
     }
 
     public boolean deleteUser(Long id) {
         validateId(id);
 
-        userDao.deleteById(id);
+        userRepository.deleteById(id);
         return true;
     }
 

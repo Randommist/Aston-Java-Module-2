@@ -8,22 +8,17 @@ import org.example.userservice.service.UserService;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
+import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
 
+@Component
+@RequiredArgsConstructor
 public class ConsoleMenu {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final UserService userService;
-    private final Scanner scanner;
-
-    public ConsoleMenu(UserService userService) {
-        this(userService, new Scanner(System.in));
-    }
-
-    ConsoleMenu(UserService userService, Scanner scanner) {
-        this.userService = userService;
-        this.scanner = scanner;
-    }
+    private final Scanner scanner = new Scanner(System.in);
 
     public void run() {
         System.out.println("User Service");
