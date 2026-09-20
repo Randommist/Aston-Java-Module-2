@@ -3,7 +3,9 @@ package org.example.userservice.mapper;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UserMapper {
     /**
      * Создаёт новую сущность User из данных запроса

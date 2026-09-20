@@ -8,7 +8,9 @@ import org.example.userservice.service.UserService;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ConsoleMenu {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

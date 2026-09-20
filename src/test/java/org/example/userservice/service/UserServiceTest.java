@@ -1,11 +1,11 @@
 package org.example.userservice.service;
 
-import org.example.userservice.database.dao.UserDao;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
 import org.example.userservice.exception.UserServiceException;
 import org.example.userservice.mapper.UserMapper;
+import org.example.userservice.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 class UserServiceTest {
 
     @Mock
-    private UserDao userDao;
+    private UserRepository userRepository;
     @Mock
     private UserMapper userMapper;
 
@@ -56,7 +56,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userDao, userMapper);
+        userService = new UserService(userRepository, userMapper);
     }
 
     @ParameterizedTest
@@ -66,12 +66,12 @@ class UserServiceTest {
         User mapped = createUser();
         User saved = createUser();
         when(userMapper.toEntity(request)).thenReturn(mapped);
-        when(userDao.create(mapped)).thenReturn(saved);
+        when(userRepository.save(mapped)).thenReturn(saved);
 
         assertSame(saved, userService.createUser(request));
 
         verify(userMapper).toEntity(request);
-        verify(userDao).create(mapped);
+        verify(userRepository).save(mapped);
     }
 
     @ParameterizedTest
@@ -81,7 +81,7 @@ class UserServiceTest {
                 () -> userService.createUser(request));
 
         assertEquals(VALIDATION_ERROR, error.getErrorCode());
-        verifyNoInteractions(userDao, userMapper);
+        verifyNoInteractions(userRepository, userMapper);
     }
 
     static Stream<CreateUserRq> invalidCreateRequests() {
@@ -102,7 +102,7 @@ class UserServiceTest {
         User mapped = createUser();
         UserServiceException failure = databaseFailure();
         when(userMapper.toEntity(request)).thenReturn(mapped);
-        when(userDao.create(mapped)).thenThrow(failure);
+        when(userRepository.save(mapped)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
                 () -> userService.createUser(request)));
@@ -111,20 +111,20 @@ class UserServiceTest {
     @Test
     void getUserById_existingUser_returnsUser() {
         User user = createUser();
-        when(userDao.findById(VALID_ID)).thenReturn(Optional.of(user));
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.of(user));
 
         assertSame(user, userService.getUserById(VALID_ID).orElseThrow());
 
-        verify(userDao).findById(VALID_ID);
+        verify(userRepository).findById(VALID_ID);
         verifyNoInteractions(userMapper);
     }
 
     @Test
     void getUserById_missingUser_returnsEmpty() {
-        when(userDao.findById(VALID_ID)).thenReturn(Optional.empty());
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.empty());
 
         assertTrue(userService.getUserById(VALID_ID).isEmpty());
-        verify(userDao).findById(VALID_ID);
+        verify(userRepository).findById(VALID_ID);
     }
 
     @ParameterizedTest
@@ -133,13 +133,13 @@ class UserServiceTest {
     void getUserById_invalidId_rejectsBeforeDaoCall(Long id) {
         assertThrows(IllegalArgumentException.class, () -> userService.getUserById(id));
 
-        verifyNoInteractions(userDao, userMapper);
+        verifyNoInteractions(userRepository, userMapper);
     }
 
     @Test
     void getUserById_daoFailure_propagatesException() {
         UserServiceException failure = databaseFailure();
-        when(userDao.findById(VALID_ID)).thenThrow(failure);
+        when(userRepository.findById(VALID_ID)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
                 () -> userService.getUserById(VALID_ID)));
@@ -148,25 +148,25 @@ class UserServiceTest {
     @Test
     void getAllUsers_returnsDaoUsers() {
         List<User> users = List.of(createUser(), createUser());
-        when(userDao.findAll()).thenReturn(users);
+        when(userRepository.findAll()).thenReturn(users);
 
         assertEquals(users, userService.getAllUsers());
-        verify(userDao).findAll();
+        verify(userRepository).findAll();
         verifyNoInteractions(userMapper);
     }
 
     @Test
     void getAllUsers_emptyDatabase_returnsEmptyList() {
-        when(userDao.findAll()).thenReturn(List.of());
+        when(userRepository.findAll()).thenReturn(List.of());
 
         assertTrue(userService.getAllUsers().isEmpty());
-        verify(userDao).findAll();
+        verify(userRepository).findAll();
     }
 
     @Test
     void getAllUsers_daoFailure_propagatesException() {
         UserServiceException failure = databaseFailure();
-        when(userDao.findAll()).thenThrow(failure);
+        when(userRepository.findAll()).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class, userService::getAllUsers));
     }
@@ -177,28 +177,28 @@ class UserServiceTest {
         UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, age);
         User existing = createUser();
         User saved = createUser();
-        when(userDao.findById(VALID_ID)).thenReturn(Optional.of(existing));
-        when(userDao.update(existing)).thenReturn(saved);
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenReturn(saved);
 
         assertSame(saved, userService.updateUser(request));
 
-        var order = inOrder(userDao, userMapper);
-        order.verify(userDao).findById(VALID_ID);
+        var order = inOrder(userRepository, userMapper);
+        order.verify(userRepository).findById(VALID_ID);
         order.verify(userMapper).updateEntity(existing, request);
-        order.verify(userDao).update(existing);
+        order.verify(userRepository).save(existing);
     }
 
     @Test
     void updateUser_missingUser_rejectsWithoutMappingOrSaving() {
         UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
-        when(userDao.findById(VALID_ID)).thenReturn(Optional.empty());
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.empty());
 
         UserServiceException error = assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request));
 
         assertEquals(USER_NOT_FOUND, error.getErrorCode());
-        verify(userDao).findById(VALID_ID);
-        verifyNoMoreInteractions(userDao);
+        verify(userRepository).findById(VALID_ID);
+        verifyNoMoreInteractions(userRepository);
         verifyNoInteractions(userMapper);
     }
 
@@ -208,7 +208,7 @@ class UserServiceTest {
         UserServiceException error = assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request));
         assertEquals(VALIDATION_ERROR, error.getErrorCode());
-        verifyNoInteractions(userDao, userMapper);
+        verifyNoInteractions(userRepository, userMapper);
     }
 
     static Stream<UpdateUserRq> invalidUpdateRequests() {
@@ -230,12 +230,12 @@ class UserServiceTest {
     void updateUser_lookupFailure_propagatesWithoutMappingOrSaving() {
         UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
         UserServiceException failure = databaseFailure();
-        when(userDao.findById(VALID_ID)).thenThrow(failure);
+        when(userRepository.findById(VALID_ID)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request)));
-        verify(userDao).findById(VALID_ID);
-        verifyNoMoreInteractions(userDao);
+        verify(userRepository).findById(VALID_ID);
+        verifyNoMoreInteractions(userRepository);
         verifyNoInteractions(userMapper);
     }
 
@@ -244,8 +244,8 @@ class UserServiceTest {
         UpdateUserRq request = new UpdateUserRq(VALID_ID, DEFAULT_USER_NAME, DEFAULT_USER_EMAIL, DEFAULT_USER_AGE);
         User existing = createUser();
         UserServiceException failure = databaseFailure();
-        when(userDao.findById(VALID_ID)).thenReturn(Optional.of(existing));
-        when(userDao.update(existing)).thenThrow(failure);
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenThrow(failure);
 
         assertSame(failure, assertThrows(UserServiceException.class,
                 () -> userService.updateUser(request)));
@@ -256,8 +256,8 @@ class UserServiceTest {
     void deleteUser_successfulDaoCall_returnsTrueWithoutExistenceCheck() {
         assertTrue(userService.deleteUser(VALID_ID));
 
-        verify(userDao).deleteById(VALID_ID);
-        verifyNoMoreInteractions(userDao);
+        verify(userRepository).deleteById(VALID_ID);
+        verifyNoMoreInteractions(userRepository);
         verifyNoInteractions(userMapper);
     }
 
@@ -267,13 +267,13 @@ class UserServiceTest {
     void deleteUser_invalidId_rejectsBeforeDaoCall(Long id) {
         assertThrows(IllegalArgumentException.class, () -> userService.deleteUser(id));
 
-        verifyNoInteractions(userDao, userMapper);
+        verifyNoInteractions(userRepository, userMapper);
     }
 
     @Test
     void deleteUser_daoFailure_propagatesException() {
         UserServiceException failure = databaseFailure();
-        doThrow(failure).when(userDao).deleteById(VALID_ID);
+        doThrow(failure).when(userRepository).deleteById(VALID_ID);
 
         assertSame(failure, assertThrows(UserServiceException.class,
                 () -> userService.deleteUser(VALID_ID)));
