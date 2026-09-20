@@ -109,8 +109,8 @@ public class ConsoleMenu {
 
         int age = readInt("New age: ");
 
-        UpdateUserRq request = new UpdateUserRq(id, name, email, age);
-        User user = userService.updateUser(request);
+        UpdateUserRq request = new UpdateUserRq(name, email, age);
+        User user = userService.updateUser(id, request);
         System.out.println("User updated:");
         printUser(user);
     }
@@ -118,11 +118,8 @@ public class ConsoleMenu {
     private void deleteUser() {
         long id = readLong("User id: ");
 
-        if (userService.deleteUser(id)) {
-            System.out.println("User deleted");
-        } else {
-            System.out.println("User not found");
-        }
+        userService.deleteUser(id);
+        System.out.println("User deleted");
     }
 
     private int readInt(String prompt) {

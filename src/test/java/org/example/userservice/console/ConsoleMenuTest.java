@@ -70,18 +70,16 @@ class ConsoleMenuTest {
 
     @Test
     void run_updateUser_passesEnteredFields() {
-        UpdateUserRq request = new UpdateUserRq(VALID_ID, OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
-        when(userService.updateUser(request)).thenReturn(user);
+        UpdateUserRq request = new UpdateUserRq(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
+        when(userService.updateUser(VALID_ID, request)).thenReturn(user);
 
         runMenu("4\n%d\n%s\n%s\n%d\n0\n".formatted(VALID_ID, OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE));
 
-        verify(userService).updateUser(request);
+        verify(userService).updateUser(VALID_ID, request);
     }
 
     @Test
     void run_deleteUser_passesEnteredId() {
-        when(userService.deleteUser(VALID_ID)).thenReturn(true);
-
         runMenu("5\n%d\n0\n".formatted(VALID_ID));
 
         verify(userService).deleteUser(VALID_ID);

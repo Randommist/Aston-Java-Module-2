@@ -3,7 +3,10 @@ package org.example.userservice.mapper;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
+import org.example.userservice.dto.UserResponse;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UserMapper {
     /**
      * Создаёт новую сущность User из данных запроса
@@ -26,5 +29,15 @@ public class UserMapper {
         user.setName(request.name().trim());
         user.setEmail(request.email().trim());
         user.setAge(request.age());
+    }
+
+    public UserResponse toResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getAge(),
+                user.getCreatedAt()
+        );
     }
 }
