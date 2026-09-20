@@ -8,9 +8,7 @@ import org.example.userservice.service.UserService;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
-import org.springframework.stereotype.Component;
 
-@Component
 public class ConsoleMenu {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -111,8 +109,8 @@ public class ConsoleMenu {
 
         int age = readInt("New age: ");
 
-        UpdateUserRq request = new UpdateUserRq(id, name, email, age);
-        User user = userService.updateUser(request);
+        UpdateUserRq request = new UpdateUserRq(name, email, age);
+        User user = userService.updateUser(id, request);
         System.out.println("User updated:");
         printUser(user);
     }
@@ -120,11 +118,8 @@ public class ConsoleMenu {
     private void deleteUser() {
         long id = readLong("User id: ");
 
-        if (userService.deleteUser(id)) {
-            System.out.println("User deleted");
-        } else {
-            System.out.println("User not found");
-        }
+        userService.deleteUser(id);
+        System.out.println("User deleted");
     }
 
     private int readInt(String prompt) {

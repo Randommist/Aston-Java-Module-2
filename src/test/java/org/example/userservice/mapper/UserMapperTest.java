@@ -12,7 +12,6 @@ import static org.example.userservice.fixture.UserTestFactory.DEFAULT_USER_NAME;
 import static org.example.userservice.fixture.UserTestFactory.OTHER_USER_AGE;
 import static org.example.userservice.fixture.UserTestFactory.OTHER_USER_EMAIL;
 import static org.example.userservice.fixture.UserTestFactory.OTHER_USER_NAME;
-import static org.example.userservice.fixture.UserTestFactory.VALID_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UserMapperTest {
@@ -33,7 +32,7 @@ class UserMapperTest {
     @Test
     void updateEntity_updatesUserFields() {
         User user = createUser();
-        UpdateUserRq request = new UpdateUserRq(VALID_ID, OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
+        UpdateUserRq request = new UpdateUserRq(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
 
         userMapper.updateEntity(user, request);
 
