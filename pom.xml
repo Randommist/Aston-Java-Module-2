@@ -28,7 +28,6 @@
         <mockito.version>5.14.2</mockito.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <jakarta-el.version>4.0.2</jakarta-el.version>
-        <testcontainers.version>1.21.4</testcontainers.version>
 
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
@@ -94,23 +93,12 @@
             <version>${logback.version}</version>
         </dependency>
 
-        <!-- ===== Testcontainers + Mockito ===== -->
+        <!-- ===== Тесты ===== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>
