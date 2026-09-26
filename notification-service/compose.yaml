@@ -1,0 +1,11 @@
+services:
+  kafka:
+    image: docker.io/apache/kafka:4.1.2
+    ports:
+      - "9092:9092"
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.27.4
+    ports:
+      - "1025:1025"
+      - "8025:8025"
