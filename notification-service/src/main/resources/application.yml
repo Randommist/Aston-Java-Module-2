@@ -27,3 +27,5 @@ notification:
     topic: user-lifecycle
   mail:
     from: ${NOTIFICATION_MAIL_FROM:no-reply@example.test}
+  api:
+    key: ${NOTIFICATION_API_KEY}

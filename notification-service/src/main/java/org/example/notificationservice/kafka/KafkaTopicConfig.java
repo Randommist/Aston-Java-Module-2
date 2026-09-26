@@ -13,4 +13,9 @@ public class KafkaTopicConfig {
     NewTopic userEventsTopic(@Value("${notification.kafka.topic}") String topicName) {
         return TopicBuilder.name(topicName).partitions(1).replicas(1).build();
     }
+
+    @Bean
+    NewTopic userEventsDeadLetterTopic(@Value("${notification.kafka.topic}") String topicName) {
+        return TopicBuilder.name(topicName + "-dlt").partitions(1).replicas(1).build();
+    }
 }
