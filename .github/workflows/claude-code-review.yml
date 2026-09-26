@@ -6,6 +6,7 @@ on:
 
 jobs:
   review:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -20,9 +21,21 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
-          plugins: "code-review@claude-code-plugins"
-          prompt: "/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
-          show_full_output: true
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Сделай код-ревью этого pull request. Пиши на русском.
+
+            1. Посмотри изменения: `gh pr diff` и `gh pr view`. При необходимости читай файлы проекта для контекста.
+            2. Ищи реальные проблемы: баги, ошибки логики, проблемы безопасности, утечки ресурсов,
+               нарушения правил из CLAUDE.md (если он есть). Не придирайся к стилю и мелочам.
+            3. На каждую найденную проблему оставь inline-комментарий к нужной строке
+               через mcp__github_inline_comment__create_inline_comment.
+            4. В конце оставь один общий комментарий через `gh pr comment` с кратким итогом.
+               Если проблем нет — так и напиши.
+
+            Не запускай подагентов и не вноси изменения в код.
           claude_args: >-
-            --allowedTools "Agent,Task,Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh search:*),mcp__github_inline_comment__create_inline_comment"
+            --max-turns 30
+            --allowedTools "Read,Grep,Glob,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment"
