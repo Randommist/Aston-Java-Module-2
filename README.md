@@ -2,6 +2,11 @@
 
 Spring Boot-приложение с CRUD API для управления пользователями.
 
+Сервис уведомлений находится в
+[notification-service](notification-service/README.md). Он получает события
+из Kafka и отправляет письма; публикация событий из `user-service` будет
+добавлена отдельным этапом.
+
 ## Стек
 
 - Java 17, Spring Boot 4
