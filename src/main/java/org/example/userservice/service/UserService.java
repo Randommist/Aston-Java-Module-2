@@ -1,6 +1,7 @@
 package org.example.userservice.service;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
@@ -20,6 +21,7 @@ import static org.example.userservice.constant.ErrorCode.USER_NOT_FOUND;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -30,6 +32,7 @@ public class UserService {
     public User createUser(CreateUserRq request) {
         User user = userMapper.toEntity(request);
         User savedUser = userRepository.save(user);
+        log.info("User created: id={}", savedUser.getId());
 
         kafkaTemplate.send("user-lifecycle",
                 new NotificationCommand(savedUser.getEmail(), UserOperation.CREATED));
@@ -54,7 +57,8 @@ public class UserService {
                 .orElseThrow(() -> new UserServiceException(USER_NOT_FOUND, USER_NOT_FOUND.getMessage()));
 
         userMapper.updateEntity(user, request);
-        return userRepository.save(user);
+        log.info("User updated: id={}", id);
+        return user;
     }
 
     @Transactional
@@ -64,6 +68,7 @@ public class UserService {
                 .orElseThrow(() -> new UserServiceException(USER_NOT_FOUND, USER_NOT_FOUND.getMessage()));
 
         userRepository.deleteById(id);
+        log.info("User deleted: id={}", id);
 
         kafkaTemplate.send("user-lifecycle",
                 new NotificationCommand(user.getEmail(), UserOperation.DELETED));
