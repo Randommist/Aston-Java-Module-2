@@ -1,9 +1,8 @@
-package org.example.userservice.controller;
+package org.example.userservice.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import org.example.userservice.constant.ErrorCode;
 import org.example.userservice.dto.ErrorResponse;
-import org.example.userservice.exception.UserServiceException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -3,6 +3,7 @@ package org.example.userservice.controller;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
+import org.example.userservice.exception.GlobalExceptionHandler;
 import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
