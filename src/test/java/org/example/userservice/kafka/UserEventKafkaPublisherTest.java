@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -29,13 +28,13 @@ class UserEventKafkaPublisherTest {
     @Mock
     private KafkaTemplate<String, NotificationCommand> kafkaTemplate;
 
-    @InjectMocks
     private UserEventKafkaPublisher publisher;
 
     private final CompletableFuture<SendResult<String, NotificationCommand>> sendFuture = new CompletableFuture<>();
 
     @BeforeEach
     void setUp() {
+        publisher = new UserEventKafkaPublisher(kafkaTemplate, TOPIC);
         when(kafkaTemplate.send(anyString(), any(NotificationCommand.class))).thenReturn(sendFuture);
     }
 

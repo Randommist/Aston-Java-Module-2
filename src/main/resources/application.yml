@@ -19,3 +19,8 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+user-service:
+  kafka:
+    # Должен совпадать с notification.kafka.topic в notification-service
+    topic: ${USER_EVENTS_TOPIC:user-lifecycle}
