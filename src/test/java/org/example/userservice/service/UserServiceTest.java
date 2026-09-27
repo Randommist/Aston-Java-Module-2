@@ -3,15 +3,19 @@ package org.example.userservice.service;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
+import org.example.userservice.event.UserDeletedEvent;
+import org.example.userservice.event.UserCreatedEvent;
 import org.example.userservice.exception.UserServiceException;
 import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,12 +47,14 @@ class UserServiceTest {
     private UserRepository userRepository;
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, userMapper);
+        userService = new UserService(userRepository, userMapper, eventPublisher);
     }
 
     @Test
@@ -62,6 +70,11 @@ class UserServiceTest {
         InOrder order = inOrder(userMapper, userRepository);
         order.verify(userMapper).toEntity(request);
         order.verify(userRepository).save(entity);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertInstanceOf(UserCreatedEvent.class, captor.getValue());
+        assertEquals(DEFAULT_USER_EMAIL, ((UserCreatedEvent) captor.getValue()).email());
     }
 
     @Test
@@ -81,16 +94,18 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_updatesManagedEntityWithoutSavingAgain() {
+    void updateUser_updatesExistingEntityAndSavesIt() {
         UpdateUserRq request = new UpdateUserRq(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
         User existing = createUser();
         when(userRepository.findById(VALID_ID)).thenReturn(Optional.of(existing));
+        when(userRepository.save(existing)).thenReturn(existing);
+
         assertSame(existing, userService.updateUser(VALID_ID, request));
 
         InOrder order = inOrder(userRepository, userMapper);
         order.verify(userRepository).findById(VALID_ID);
         order.verify(userMapper).updateEntity(existing, request);
-        verify(userRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        order.verify(userRepository).save(existing);
     }
 
     @Test
@@ -102,21 +117,33 @@ class UserServiceTest {
                 () -> userService.updateUser(VALID_ID, request));
 
         assertEquals(USER_NOT_FOUND, exception.getErrorCode());
-        verify(userRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
     void deleteUser_existingUser_deletesIt() {
-        when(userRepository.existsById(VALID_ID)).thenReturn(true);
+        User user = new User();
+        user.setId(VALID_ID);
+        user.setEmail("test@example.com");
+
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.of(user));
 
         userService.deleteUser(VALID_ID);
 
         verify(userRepository).deleteById(VALID_ID);
+
+        ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        Object published = captor.getValue();
+        assertInstanceOf(UserDeletedEvent.class, published);
+        UserDeletedEvent event = (UserDeletedEvent) published;
+        assertEquals("test@example.com", event.email());
     }
 
     @Test
     void deleteUser_missingUser_throwsNotFound() {
-        when(userRepository.existsById(VALID_ID)).thenReturn(false);
+        when(userRepository.findById(VALID_ID)).thenReturn(Optional.empty());
 
         UserServiceException exception = assertThrows(UserServiceException.class,
                 () -> userService.deleteUser(VALID_ID));

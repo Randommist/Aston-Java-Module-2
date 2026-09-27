@@ -1,3 +1,3 @@
 package org.example.userservice.event;
 
-public record NotificationCommand(String email, UserOperation operation) {}
+public record NotificationCommand(UserOperation operation, String email) {}
