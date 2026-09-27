@@ -12,10 +12,10 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        # notification-service читает JSON без Java-типов из заголовков
+        spring.json.add.type.headers: false
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-
-server:
-  port: 8082

@@ -94,18 +94,17 @@ class UserServiceTest {
     }
 
     @Test
-    void updateUser_updatesExistingEntityAndSavesIt() {
+    void updateUser_updatesManagedEntityWithoutSavingAgain() {
         UpdateUserRq request = new UpdateUserRq(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
         User existing = createUser();
         when(userRepository.findById(VALID_ID)).thenReturn(Optional.of(existing));
-        when(userRepository.save(existing)).thenReturn(existing);
 
         assertSame(existing, userService.updateUser(VALID_ID, request));
 
         InOrder order = inOrder(userRepository, userMapper);
         order.verify(userRepository).findById(VALID_ID);
         order.verify(userMapper).updateEntity(existing, request);
-        order.verify(userRepository).save(existing);
+        verify(userRepository, never()).save(any());
     }
 
     @Test

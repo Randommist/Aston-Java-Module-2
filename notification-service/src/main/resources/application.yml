@@ -10,14 +10,10 @@ spring:
       group-id: notification-service
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
-      properties:
-        spring.json.use.type.headers: false
-        spring.json.trusted.packages: "org.example.notificationservice.model"
-        spring.json.value.default.type: org.example.notificationservice.model.NotificationCommand
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   mail:
     host: ${SPRING_MAIL_HOST:localhost}
     port: ${SPRING_MAIL_PORT:1025}
@@ -27,9 +23,9 @@ spring:
       "[mail.smtp.writetimeout]": 5000
 
 notification:
-  api:
-    key: test-api-key
   kafka:
     topic: user-lifecycle
   mail:
     from: ${NOTIFICATION_MAIL_FROM:no-reply@example.test}
+  api:
+    key: ${NOTIFICATION_API_KEY}

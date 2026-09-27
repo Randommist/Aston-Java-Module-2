@@ -4,6 +4,7 @@ import org.example.userservice.event.NotificationCommand;
 import org.example.userservice.event.UserCreatedEvent;
 import org.example.userservice.event.UserDeletedEvent;
 import org.example.userservice.event.UserOperation;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -11,6 +12,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -27,6 +31,13 @@ class UserEventKafkaPublisherTest {
 
     @InjectMocks
     private UserEventKafkaPublisher publisher;
+
+    private final CompletableFuture<SendResult<String, NotificationCommand>> sendFuture = new CompletableFuture<>();
+
+    @BeforeEach
+    void setUp() {
+        when(kafkaTemplate.send(anyString(), any(NotificationCommand.class))).thenReturn(sendFuture);
+    }
 
     @Test
     void onUserCreated_sendsCreatedEventToKafka() {
@@ -75,5 +86,12 @@ class UserEventKafkaPublisherTest {
         publisher.onUserCreated(new UserCreatedEvent(EMAIL));
 
         verify(kafkaTemplate, times(1)).send(anyString(), any(NotificationCommand.class));
+    }
+
+    @Test
+    void onUserCreated_sendFailure_doesNotThrow() {
+        publisher.onUserCreated(new UserCreatedEvent(EMAIL));
+
+        assertDoesNotThrow(() -> sendFuture.completeExceptionally(new RuntimeException("broker down")));
     }
 }
