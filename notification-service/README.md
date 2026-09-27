@@ -5,9 +5,13 @@ Kafka-топика `user-lifecycle`; то же действие доступно
 
 ## Локальный запуск через Docker
 
-Из каталога `notification-service` запустите Kafka и тестовый SMTP-сервер:
+Kafka общая для обоих сервисов и описана в корневом `docker-compose.yaml`.
+Из корня репозитория запустите её, затем из каталога `notification-service` —
+тестовый SMTP-сервер и сам сервис:
 
 ```bash
+docker compose up -d kafka
+cd notification-service
 docker compose -f compose.yaml up -d
 NOTIFICATION_API_KEY=local-dev-key mvn spring-boot:run
 ```
@@ -39,8 +43,8 @@ curl -i -X POST http://localhost:8081/api/notifications \
 интервалом в секунду, а затем перекладывает его в топик `user-lifecycle-dlt`
 и читает дальше. Битый JSON и невалидные данные уходят туда сразу, без повторов.
 
-`user-service` пока не публикует эти события: его подключение будет следующим
-этапом. Адрес пользователя при удалении нужно прочитать до удаления записи.
+`user-service` публикует эти события после коммита транзакции создания и
+удаления пользователя.
 
 ## Тесты
 

@@ -5,9 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
+import org.example.userservice.event.UserCreatedEvent;
+import org.example.userservice.event.UserDeletedEvent;
 import org.example.userservice.exception.UserServiceException;
 import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +26,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public User createUser(CreateUserRq request) {
         User user = userMapper.toEntity(request);
         User savedUser = userRepository.save(user);
         log.info("User created: id={}", savedUser.getId());
+
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser.getEmail()));
+
         return savedUser;
     }
 
@@ -57,11 +64,13 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         validateId(id);
-        if (!userRepository.existsById(id)) {
-            throw new UserServiceException(USER_NOT_FOUND, USER_NOT_FOUND.getMessage());
-        }
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserServiceException(USER_NOT_FOUND, USER_NOT_FOUND.getMessage()));
+
         userRepository.deleteById(id);
         log.info("User deleted: id={}", id);
+
+        eventPublisher.publishEvent(new UserDeletedEvent(user.getEmail()));
     }
 
     private void validateId(Long id) {
