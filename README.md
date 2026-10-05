@@ -13,6 +13,7 @@ Spring Boot-приложение с CRUD API для управления пол�
 - Spring Web, Spring Data JPA, Bean Validation
 - PostgreSQL
 - OpenAPI 3 / Swagger UI
+- Spring HATEOAS (HAL)
 - JUnit 5, Mockito, MockMvc
 
 ## Запуск
@@ -49,6 +50,30 @@ docker compose up --build
 ```
 
 Entity из контроллера не возвращается: API использует request DTO и `UserResponse`.
+
+### HATEOAS
+
+Ответы приходят в формате HAL (`application/hal+json`): кроме данных, в них есть
+блок `_links` со ссылками на доступные действия.
+
+```json
+{
+  "id": 1,
+  "name": "John",
+  "email": "john@example.com",
+  "age": 30,
+  "createdAt": "2026-01-01T12:00:00",
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/users/1" },
+    "update": { "href": "http://localhost:8080/api/users/1" },
+    "delete": { "href": "http://localhost:8080/api/users/1" },
+    "users": { "href": "http://localhost:8080/api/users" }
+  }
+}
+```
+
+`GET /api/users` возвращает пользователей в `_embedded.users`, у каждого свои
+ссылки, плюс `_links.self` на сам список.
 
 После запуска доступны:
 
