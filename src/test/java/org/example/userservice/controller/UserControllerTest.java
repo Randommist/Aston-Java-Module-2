@@ -3,19 +3,18 @@ package org.example.userservice.controller;
 import org.example.userservice.database.entity.User;
 import org.example.userservice.dto.CreateUserRq;
 import org.example.userservice.dto.UpdateUserRq;
-import org.example.userservice.exception.GlobalExceptionHandler;
+import org.example.userservice.hateoas.UserModelAssembler;
 import org.example.userservice.mapper.UserMapper;
 import org.example.userservice.service.UserService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,24 +38,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(UserController.class)
+@Import({UserModelAssembler.class, UserMapper.class})
 class UserControllerTest {
 
-    @Mock
+    private static final String USERS_URL = "http://localhost/api/users";
+    private static final String USER_URL = USERS_URL + "/" + VALID_ID;
+
+    @MockitoBean
     private UserService userService;
 
+    @Autowired
     private MockMvc mockMvc;
-
-    @BeforeEach
-    void setUp() {
-        LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-        validator.afterPropertiesSet();
-        UserController controller = new UserController(userService, new UserMapper());
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .setValidator(validator)
-                .build();
-    }
 
     @Test
     void create_returnsCreatedDto() throws Exception {
@@ -70,10 +63,11 @@ class UserControllerTest {
                                 {"name":"John","email":"john@example.com","age":30}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_JSON))
                 .andExpect(jsonPath("$.id").value(VALID_ID))
                 .andExpect(jsonPath("$.name").value(DEFAULT_USER_NAME))
-                .andExpect(jsonPath("$.email").value(DEFAULT_USER_EMAIL));
+                .andExpect(jsonPath("$.email").value(DEFAULT_USER_EMAIL))
+                .andExpect(jsonPath("$._links.self.href").value(USER_URL));
     }
 
     @Test
@@ -98,7 +92,11 @@ class UserControllerTest {
         mockMvc.perform(get("/api/users/{id}", VALID_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(VALID_ID))
-                .andExpect(jsonPath("$.age").value(DEFAULT_USER_AGE));
+                .andExpect(jsonPath("$.age").value(DEFAULT_USER_AGE))
+                .andExpect(jsonPath("$._links.self.href").value(USER_URL))
+                .andExpect(jsonPath("$._links.update.href").value(USER_URL))
+                .andExpect(jsonPath("$._links.delete.href").value(USER_URL))
+                .andExpect(jsonPath("$._links.users.href").value(USERS_URL));
     }
 
     @Test
@@ -118,8 +116,10 @@ class UserControllerTest {
 
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[1].name").value(OTHER_USER_NAME));
+                .andExpect(jsonPath("$._embedded.users.length()").value(2))
+                .andExpect(jsonPath("$._embedded.users[1].name").value(OTHER_USER_NAME))
+                .andExpect(jsonPath("$._embedded.users[1]._links.self.href").value(USERS_URL + "/2"))
+                .andExpect(jsonPath("$._links.self.href").value(USERS_URL));
     }
 
     @Test
@@ -135,7 +135,8 @@ class UserControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(VALID_ID))
-                .andExpect(jsonPath("$.name").value(OTHER_USER_NAME));
+                .andExpect(jsonPath("$.name").value(OTHER_USER_NAME))
+                .andExpect(jsonPath("$._links.self.href").value(USER_URL));
     }
 
     @Test
