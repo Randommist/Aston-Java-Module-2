@@ -56,8 +56,8 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "Получить всех пользователей")
-    public CollectionModel<EntityModel<UserResponse>> getAll() {
-        return userModelAssembler.toCollectionModel(userService.getAllUsers());
+    public CollectionModel<?> getAll() {
+        return userModelAssembler.toUsersModel(userService.getAllUsers());
     }
 
     @PutMapping("/{id}")

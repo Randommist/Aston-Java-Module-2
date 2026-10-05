@@ -7,8 +7,12 @@ import org.example.userservice.dto.UserResponse;
 import org.example.userservice.mapper.UserMapper;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.core.EmbeddedWrappers;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -32,9 +36,16 @@ public class UserModelAssembler implements RepresentationModelAssembler<User, En
                 linkTo(methodOn(UserController.class).getAll()).withRel("users"));
     }
 
-    @Override
-    public CollectionModel<EntityModel<UserResponse>> toCollectionModel(Iterable<? extends User> users) {
-        return RepresentationModelAssembler.super.toCollectionModel(users)
-                .add(linkTo(methodOn(UserController.class).getAll()).withSelfRel());
+    /**
+     * Список пользователей со ссылкой на себя. Для пустого списка явно отдаём
+     * пустой {@code _embedded.users}: иначе HAL опустил бы это поле целиком.
+     */
+    public CollectionModel<?> toUsersModel(List<User> users) {
+        Link selfLink = linkTo(methodOn(UserController.class).getAll()).withSelfRel();
+        if (users.isEmpty()) {
+            Object emptyUsers = new EmbeddedWrappers(false).emptyCollectionOf(UserResponse.class);
+            return CollectionModel.of(List.of(emptyUsers), selfLink);
+        }
+        return toCollectionModel(users).add(selfLink);
     }
 }

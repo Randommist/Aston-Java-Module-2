@@ -123,6 +123,17 @@ class UserControllerTest {
     }
 
     @Test
+    void getAll_noUsers_returnsEmptyEmbeddedList() throws Exception {
+        when(userService.getAllUsers()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.users").isArray())
+                .andExpect(jsonPath("$._embedded.users.length()").value(0))
+                .andExpect(jsonPath("$._links.self.href").value(USERS_URL));
+    }
+
+    @Test
     void update_returnsUpdatedDto() throws Exception {
         UpdateUserRq request = new UpdateUserRq(OTHER_USER_NAME, OTHER_USER_EMAIL, OTHER_USER_AGE);
         when(userService.updateUser(VALID_ID, request)).thenReturn(user(VALID_ID,
