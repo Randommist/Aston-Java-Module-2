@@ -18,6 +18,12 @@ jobs:
             path: .
           - service: notification-service
             path: notification-service
+          - service: config-server
+            path: config-server
+          - service: discovery-server
+            path: discovery-server
+          - service: api-gateway
+            path: api-gateway
     defaults:
       run:
         working-directory: ${{ matrix.path }}

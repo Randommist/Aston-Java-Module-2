@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: api-gateway
+  config:
+    # Настройки сервиса хранятся в config-server: config/api-gateway.yml и config/application.yml
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}

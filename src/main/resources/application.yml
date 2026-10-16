@@ -1,26 +1,6 @@
 spring:
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/user_service}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
-  jpa:
-    hibernate:
-      ddl-auto: update
-    open-in-view: false
-  kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
-      properties:
-        # notification-service читает JSON без Java-типов из заголовков
-        spring.json.add.type.headers: false
-
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-
-user-service:
-  kafka:
-    # Должен совпадать с notification.kafka.topic в notification-service
-    topic: ${USER_EVENTS_TOPIC:user-lifecycle}
+  application:
+    name: user-service
+  config:
+    # Настройки сервиса хранятся в config-server: config/user-service.yml и config/application.yml
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
