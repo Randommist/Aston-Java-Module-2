@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: user-service
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/user_service}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
@@ -24,3 +26,11 @@ user-service:
   kafka:
     # Должен совпадать с notification.kafka.topic в notification-service
     topic: ${USER_EVENTS_TOPIC:user-lifecycle}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    # В Docker имя хоста контейнера другим сервисам не видно, адрес надёжнее
+    prefer-ip-address: true

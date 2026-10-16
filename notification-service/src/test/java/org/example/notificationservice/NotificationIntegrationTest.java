@@ -35,7 +35,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "notification.api.key=" + NotificationIntegrationTest.API_KEY)
+@SpringBootTest(properties = {
+        "notification.api.key=" + NotificationIntegrationTest.API_KEY,
+        "eureka.client.enabled=false"
+})
 @EmbeddedKafka(topics = "user-lifecycle", partitions = 1)
 @DirtiesContext
 class NotificationIntegrationTest {

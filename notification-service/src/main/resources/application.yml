@@ -29,3 +29,10 @@ notification:
     from: ${NOTIFICATION_MAIL_FROM:no-reply@example.test}
   api:
     key: ${NOTIFICATION_API_KEY}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
