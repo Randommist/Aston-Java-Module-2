@@ -20,8 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * user-service «зарегистрирован» по адресу, где никто не слушает:
  * каждый вызов заканчивается ошибкой соединения.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "eureka.client.enabled=false")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CircuitBreakerTest {
 
     @LocalServerPort

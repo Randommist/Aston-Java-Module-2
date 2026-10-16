@@ -1,64 +1,6 @@
-server:
-  port: ${SERVER_PORT:8080}
-
 spring:
   application:
     name: api-gateway
-  cloud:
-    gateway:
-      server:
-        webflux:
-          default-filters:
-            # Сервис видит исходный Host (адрес gateway) и строит по нему HATEOAS-ссылки.
-            # X-Forwarded-* для этого не годятся: gateway добавляет их только для
-            # доверенных прокси (trusted-proxies), а клиенты к ним не относятся.
-            - PreserveHostHeader
-          routes:
-            # lb://<имя> — адрес берётся из Eureka, запросы балансируются между копиями
-            - id: user-service
-              uri: lb://user-service
-              predicates:
-                - Path=/api/users/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: user-service
-                    fallbackUri: forward:/fallback/user-service
-                    # Кроме ошибок соединения и таймаутов сбоем считаем и эти ответы
-                    statusCodes: [502, 503, 504]
-            - id: notification-service
-              uri: lb://notification-service
-              predicates:
-                - Path=/api/notifications/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: notification-service
-                    fallbackUri: forward:/fallback/notification-service
-                    # Кроме ошибок соединения и таймаутов сбоем считаем и эти ответы
-                    statusCodes: [502, 503, 504]
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
-  instance:
-    prefer-ip-address: true
-
-resilience4j:
-  circuitbreaker:
-    configs:
-      default:
-        # Решение принимается по последним 10 вызовам, но не раньше чем после 5
-        sliding-window-size: 10
-        minimum-number-of-calls: 5
-        # Половина вызовов упала — размыкаемся и 10 секунд сразу отдаём fallback
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        # Потом пропускаем 2 пробных вызова: прошли — замыкаемся обратно
-        permitted-number-of-calls-in-half-open-state: 2
-        automatic-transition-from-open-to-half-open-enabled: true
-  timelimiter:
-    configs:
-      default:
-        timeout-duration: 5s
+  config:
+    # Настройки сервиса хранятся в config-server: config/api-gateway.yml и config/application.yml
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}

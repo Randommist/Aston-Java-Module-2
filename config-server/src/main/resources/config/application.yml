@@ -1,0 +1,16 @@
+# Общие настройки всех сервисов. Плейсхолдеры ${...} раскрываются на стороне
+# сервиса, поэтому переменные окружения задаются у самого сервиса.
+# Секреты (пароли, ключи) сюда не кладём — только ссылки на переменные окружения.
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    # В Docker имя хоста контейнера другим сервисам не видно, адрес надёжнее
+    prefer-ip-address: true
+
+app:
+  kafka:
+    # Топик событий о пользователях: в него пишет user-service, читает notification-service
+    user-events-topic: ${USER_EVENTS_TOPIC:user-lifecycle}

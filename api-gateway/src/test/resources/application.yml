@@ -1,0 +1,17 @@
+# В тестах config-server не запускается: те же файлы конфигурации читаются с диска,
+# поэтому тесты проверяют настоящие настройки сервиса.
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    config:
+      enabled: false
+  config:
+    import:
+      - file:../config-server/src/main/resources/config/application.yml
+      - file:../config-server/src/main/resources/config/api-gateway.yml
+
+eureka:
+  client:
+    enabled: false
+

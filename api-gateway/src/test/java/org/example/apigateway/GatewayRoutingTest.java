@@ -17,8 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Вместо Eureka адреса сервисов задаются через simple discovery client,
  * сами сервисы заменены заглушками.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "eureka.client.enabled=false")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GatewayRoutingTest {
 
     private static final StubService USER_SERVICE = stub("{\"service\":\"user-service\"}");
