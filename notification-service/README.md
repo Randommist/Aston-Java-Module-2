@@ -3,29 +3,23 @@
 Отправляет письма при создании и удалении пользователя. Событие приходит из
 Kafka-топика `user-lifecycle`; то же действие доступно напрямую по HTTP.
 
-## Локальный запуск через Docker
+## Запуск
 
-Kafka общая для обоих сервисов и описана в корневом `docker-compose.yaml`.
-Из корня репозитория запустите её, затем из каталога `notification-service` —
-тестовый SMTP-сервер и сам сервис:
-
-```bash
-docker compose up -d kafka
-cd notification-service
-docker compose -f compose.yaml up -d
-NOTIFICATION_API_KEY=local-dev-key mvn spring-boot:run
-```
+Сервис входит в общую систему и запускается из корня репозитория:
+`docker compose up --build` (см. [README](../README.md#запуск)). Настройки
+сервиса — в [`config-server/src/main/resources/config/notification-service.yml`](../config-server/src/main/resources/config/notification-service.yml).
 
 Переменная `NOTIFICATION_API_KEY` обязательна: без неё сервис не запустится.
 
-Сервис слушает `http://localhost:8081`. Mailpit показывает перехваченные письма
+Через gateway HTTP API доступно на `http://localhost:8080/api/notifications`,
+напрямую — на `http://localhost:8081`. Mailpit показывает перехваченные письма
 на <http://localhost:8025>. Для настоящего SMTP задайте `SPRING_MAIL_HOST`,
 `SPRING_MAIL_PORT` и при необходимости стандартные свойства `spring.mail.*`.
 
 ## HTTP API
 
 ```bash
-curl -i -X POST http://localhost:8081/api/notifications \
+curl -i -X POST http://localhost:8080/api/notifications \
   -H 'X-API-Key: local-dev-key' \
   -H 'Content-Type: application/json' \
   -d '{"operation":"CREATED","email":"user@example.com"}'
@@ -53,4 +47,5 @@ mvn test
 ```
 
 Интеграционные тесты запускают встроенную Kafka и тестовый SMTP-сервер GreenMail;
-внешние сервисы для них не требуются.
+внешние сервисы для них не требуются. Настройки тесты читают из
+`config-server/src/main/resources/config` прямо с диска.
