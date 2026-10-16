@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            # Сервис видит исходный Host (адрес gateway) и строит по нему HATEOAS-ссылки.
+            # X-Forwarded-* для этого не годятся: gateway добавляет их только для
+            # доверенных прокси (trusted-proxies), а клиенты к ним не относятся.
+            - PreserveHostHeader
+          routes:
+            # lb://<имя> — адрес берётся из Eureka, запросы балансируются между копиями
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/users/**
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/notifications/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
