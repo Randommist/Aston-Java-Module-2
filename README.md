@@ -47,18 +47,68 @@ Spring Boot-приложение с CRUD API для управления пол�
 - Spring HATEOAS (HAL)
 - JUnit 5, Mockito, MockMvc
 
-## Запуск
+## Запуск всей системы через Docker Compose
 
-Скопируйте `.env.example` в `.env` и задайте в нём `NOTIFICATION_API_KEY`,
-затем запустите всю систему:
+Нужны Docker с Compose v2 и примерно 6 ГБ свободной оперативной памяти.
+Java и Maven на хосте не требуются: все пять приложений собираются внутри
+многостадийных Dockerfile. Для smoke-теста нужен Python 3 без дополнительных пакетов.
 
 ```bash
-docker compose up --build
+cp .env.example .env
+# Укажите свой NOTIFICATION_API_KEY в .env.
+docker compose up -d --build --wait --wait-timeout 300
+docker compose ps
+python3 scripts/smoke_test.py
 ```
 
-Сервисы ждут, пока поднимутся config-server и discovery-server. После
-регистрации в Eureka gateway начинает направлять на них запросы — это занимает
-до 30 секунд после старта, до этого gateway отвечает `503`.
+[`docker-compose.yml`](docker-compose.yml) запускает восемь контейнеров:
+PostgreSQL, Kafka в режиме KRaft (без ZooKeeper), Mailpit и пять Spring-приложений.
+Проверки готовности ожидают PostgreSQL, доступность Kafka и SMTP, а у Spring-сервисов
+проверяют Actuator `/actuator/health/readiness`. Зависимости запускаются раньше
+клиентов; Gateway стартует после готовности обоих микросервисов.
+Регистрация и обновление кэша Eureka могут занять ещё до минуты: smoke-тест
+ожидает регистрации и доступности маршрутов.
+
+Внутри контейнеров используются адреса `db:5432`, `kafka:29092`, `mailpit:1025`,
+`config-server:8888`, `discovery-server:8761`. Kafka также публикует отдельный
+listener `localhost:9092` для клиентов с хоста. Имена контейнеров и томов
+изолированы проектом Compose; PostgreSQL и Kafka сохраняют данные в именованных томах.
+
+### Проверка взаимодействия контейнеров
+
+`python3 scripts/smoke_test.py` проверяет:
+
+- готовность пяти приложений и выдачу конфигураций через Config Server;
+- регистрацию user-service, notification-service и Gateway в Eureka;
+- создание, чтение, обновление и удаление пользователя через Gateway;
+- фактическую доставку писем о создании и удалении через Kafka и SMTP;
+- HTTP API уведомлений через Gateway: `401` без ключа, `204` с ключом и доставку письма.
+
+Тест использует уникальные email и удаляет созданного пользователя. Чужие записи
+и письма не очищаются. Ключ читается из окружения или `.env` и не выводится.
+При успехе выводится `SMOKE TEST PASSED`, при ошибке — ненулевой код завершения.
+Эта же проверка выполняется в GitHub Actions (`Compose integration`).
+
+Полезные адреса:
+
+| Адрес | Назначение |
+|---|---|
+| <http://localhost:8080/api/users> | API через Gateway |
+| <http://localhost:8761> | Реестр Eureka |
+| <http://localhost:8888/user-service/default> | Внешняя конфигурация user-service |
+| <http://localhost:8025> | Письма в Mailpit (реальная рассылка отключена) |
+| <http://localhost:8082/swagger-ui.html> | Swagger user-service |
+
+Порты привязаны к `127.0.0.1`. Они должны быть свободны; это стенд для локальной
+проверки, а не конфигурация публичного production-развёртывания.
+
+```bash
+docker compose logs -f user-service notification-service api-gateway
+docker compose down
+```
+
+`down` останавливает систему, сохраняя данные PostgreSQL и Kafka. Для полного сброса
+можно выполнить `docker compose down --volumes`: эта команда удалит данные стенда.
 
 ### Локальный запуск без Docker
 
